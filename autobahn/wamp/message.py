@@ -311,14 +311,11 @@ def _validate_kwargs(kwargs, message=u"WAMP message invalid"):
         :class:`autobahn.wamp.exception.ProtocolError`
     """
     if kwargs is not None:
-        kwargs_type = type(kwargs)
-        if kwargs_type not in [dict, list]:
+        if type(kwargs) != dict:
             raise ProtocolError(u"{0}: invalid type {1} for WAMP kwargs".format(message, type(kwargs)))
-        if kwargs_type is dict:
-            for k in kwargs.keys():
-                if not isinstance(k, six.text_type):
-                    raise ProtocolError(u"{0}: invalid type {1} for key in WAMP kwargs ('{2}')".format(message,
-                                                                                                       type(k), k))
+        for k in kwargs.keys():
+            if not isinstance(k, six.text_type):
+                raise ProtocolError(u"{0}: invalid type {1} for key in WAMP kwargs ('{2}')".format(message, type(k), k))
         return kwargs
 
 
@@ -3281,9 +3278,11 @@ class Result(Message):
         :param forward_for: When this Call is forwarded for a client (or from an intermediary router).
         :type forward_for: list[dict]
         """
+        if type(kwargs) == list:
+            kwargs = dict(result=kwargs)
         assert(type(request) in six.integer_types)
         assert(args is None or type(args) in [list, tuple])
-        assert(kwargs is None or type(kwargs) in [dict, list])
+        assert(kwargs is None or type(kwargs) == dict)
         assert(payload is None or type(payload) == six.binary_type)
         assert(payload is None or (payload is not None and args is None and kwargs is None))
         assert(progress is None or type(progress) == bool)
@@ -3367,7 +3366,7 @@ class Result(Message):
 
             if len(wmsg) > 4:
                 kwargs = wmsg[4]
-                if type(kwargs) not in [dict, list]:
+                if type(kwargs) != dict:
                     raise ProtocolError("invalid type {0} for 'kwargs' in RESULT".format(type(kwargs)))
 
         progress = None

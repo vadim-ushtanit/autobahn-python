@@ -816,10 +816,7 @@ class ApplicationSession(BaseSession):
                                 if msg.args:
                                     res = types.CallResult(*msg.args, **msg.kwargs)
                                 else:
-                                    if type(msg.kwargs) == list:
-                                        res = types.CallResult(*msg.args)
-                                    else:
-                                        res = types.CallResult(**msg.kwargs)
+                                    res = types.CallResult(**msg.kwargs)
                                 txaio.resolve(on_reply, res)
                             else:
                                 if msg.args:

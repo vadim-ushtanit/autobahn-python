@@ -3278,8 +3278,6 @@ class Result(Message):
         :param forward_for: When this Call is forwarded for a client (or from an intermediary router).
         :type forward_for: list[dict]
         """
-        if type(kwargs) == list:
-            kwargs = dict(result=kwargs)
         assert(type(request) in six.integer_types)
         assert(args is None or type(args) in [list, tuple])
         assert(kwargs is None or type(kwargs) == dict)
@@ -3366,6 +3364,8 @@ class Result(Message):
 
             if len(wmsg) > 4:
                 kwargs = wmsg[4]
+                if type(kwargs) == list:
+                    kwargs = dict(result=kwargs)
                 if type(kwargs) != dict:
                     raise ProtocolError("invalid type {0} for 'kwargs' in RESULT".format(type(kwargs)))
 

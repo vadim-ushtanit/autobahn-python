@@ -311,7 +311,7 @@ def _validate_kwargs(kwargs, message=u"WAMP message invalid"):
         :class:`autobahn.wamp.exception.ProtocolError`
     """
     if kwargs is not None:
-        if type(kwargs) != dict:
+        if type(kwargs) not in [dict, list]:
             raise ProtocolError(u"{0}: invalid type {1} for WAMP kwargs".format(message, type(kwargs)))
         for k in kwargs.keys():
             if not isinstance(k, six.text_type):

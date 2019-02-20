@@ -319,11 +319,6 @@ def _validate_kwargs(kwargs, message=u"WAMP message invalid"):
                 if not isinstance(k, six.text_type):
                     raise ProtocolError(u"{0}: invalid type {1} for key in WAMP kwargs ('{2}')".format(message,
                                                                                                        type(k), k))
-        else:
-            for e in kwargs:
-                if not isinstance(e, six.text_type):
-                    raise ProtocolError(u"{0}: invalid type {1} for element in  WAMP kwargs ('{2}')".format(message,
-                                                                                                            type(e), e))
         return kwargs
 
 

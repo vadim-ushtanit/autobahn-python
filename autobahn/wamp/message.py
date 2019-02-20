@@ -3280,7 +3280,7 @@ class Result(Message):
         """
         assert(type(request) in six.integer_types)
         assert(args is None or type(args) in [list, tuple])
-        assert(kwargs is None or type(kwargs) == dict)
+        assert(kwargs is None or type(kwargs) in [dict, list])
         assert(payload is None or type(payload) == six.binary_type)
         assert(payload is None or (payload is not None and args is None and kwargs is None))
         assert(progress is None or type(progress) == bool)

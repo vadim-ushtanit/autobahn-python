@@ -3364,7 +3364,7 @@ class Result(Message):
 
             if len(wmsg) > 4:
                 kwargs = wmsg[4]
-                if type(kwargs) != dict:
+                if type(kwargs) != dict or type(kwargs) != list:
                     raise ProtocolError("invalid type {0} for 'kwargs' in RESULT".format(type(kwargs)))
 
         progress = None

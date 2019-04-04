@@ -3364,7 +3364,7 @@ class Result(Message):
 
             if len(wmsg) > 4:
                 kwargs = wmsg[4]
-                if type(kwargs) is None:
+                if kwargs is None:
                     kwargs = dict()
                 if type(kwargs) == list:
                     kwargs = dict(result=kwargs)

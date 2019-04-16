@@ -3368,6 +3368,8 @@ class Result(Message):
                     kwargs = dict()
                 if type(kwargs) == list:
                     kwargs = dict(result=kwargs)
+                if type(kwargs) is bool:
+                    kwargs = dict(result=kwargs)
                 if type(kwargs) != dict:
                     raise ProtocolError("invalid type {0} for 'kwargs' in RESULT".format(type(kwargs)))
 

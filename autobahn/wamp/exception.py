@@ -67,6 +67,13 @@ class SerializationError(Error):
 
 
 @public
+class InvalidUriError(Error):
+    """
+    Exception raised when an invalid WAMP URI was used.
+    """
+
+
+@public
 class ProtocolError(Error):
     """
     Exception raised when WAMP protocol was violated. Protocol errors
@@ -99,6 +106,12 @@ class ApplicationError(Error):
     INVALID_PAYLOAD = u"wamp.error.invalid_payload"
     """
     The application payload could not be serialized.
+    """
+
+    PAYLOAD_SIZE_EXCEEDED = u"wamp.error.payload_size_exceeded"
+    """
+    The application payload could not be transported becuase the serialized/framed payload
+    exceeds the transport limits.
     """
 
     NO_SUCH_PROCEDURE = u"wamp.error.no_such_procedure"
@@ -246,6 +259,10 @@ class ApplicationError(Error):
         self.kwargs = kwargs
         self.error = error
         self.enc_algo = kwargs.pop('enc_algo', None)
+        self.callee = kwargs.pop('callee', None)
+        self.callee_authid = kwargs.pop('callee_authid', None)
+        self.callee_authrole = kwargs.pop('callee_authrole', None)
+        self.forward_for = kwargs.pop('forward_for', None)
 
     @public
     def error_message(self):
@@ -266,8 +283,8 @@ class ApplicationError(Error):
             self.kwargs['traceback'] = u'...'
         else:
             tb = u''
-        return u"ApplicationError(error=<{0}>, args={1}, kwargs={2}, enc_algo={3}){4}".format(
-            self.error, list(self.args), self.kwargs, self.enc_algo, tb)
+        return u"ApplicationError(error=<{0}>, args={1}, kwargs={2}, enc_algo={3}, callee={4}, callee_authid={5}, callee_authrole={6}, forward_for={7}){8}".format(
+            self.error, list(self.args), self.kwargs, self.enc_algo, self.callee, self.callee_authid, self.callee_authrole, self.forward_for, tb)
 
     def __str__(self):
         if six.PY3:

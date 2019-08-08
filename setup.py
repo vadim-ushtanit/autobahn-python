@@ -92,24 +92,36 @@ extras_require_compress = [
     "lz4>=0.7.0"                # BSD license
 ]
 
-# non-JSON WAMP serialization support (namely MsgPack, CBOR and UBJSON)
-os.environ['PYUBJSON_NO_EXTENSION'] = '1'  # enforce use of pure Python py-ubjson (no Cython)
-extras_require_serialization = [
-    "u-msgpack-python>=2.1",    # MIT license
-    "cbor>=1.0.0",              # Apache 2.0 license
-    "py-ubjson>=0.8.4"          # Apache 2.0 license
-]
+# accelerated JSON and non-JSON WAMP serialization support (namely MessagePack, CBOR and UBJSON)
+extras_require_serialization = []
+if CPY:
+    extras_require_serialization.extend([
+        'msgpack>=0.6.1',       # Apache 2.0 license
+        'ujson>=1.35',          # BSD license
+    ])
+else:
+    os.environ['PYUBJSON_NO_EXTENSION'] = '1'  # enforce use of pure Python py-ubjson (no Cython)
+    extras_require_serialization.extend([
+        'u-msgpack-python>=2.1',    # MIT license
+    ])
+
+extras_require_serialization.extend([
+    'cbor2>=4.1.2',             # MIT license
+    'cbor>=1.0.0',              # Apache 2.0 license
+    'py-ubjson>=0.8.4',         # Apache 2.0 license
+    'flatbuffers>=1.10',        # Apache 2.0 license
+])
 
 # TLS transport encryption
 # WAMP-cryptosign end-to-end encryption
 # WAMP-cryptosign authentication
 os.environ['SODIUM_INSTALL'] = 'bundled'  # enforce use of bundled libsodium
 extras_require_encryption = [
-    'pyopenssl>=16.2.0',        # Apache 2.0 license
-    'service_identity>=16.0.0', # MIT license
-    'pynacl>=1.0.1',            # Apache license
-    'pytrie>=0.2',              # BSD license
-    'pyqrcode>=1.1'             # BSD license
+    'pyopenssl>=16.2.0',            # Apache 2.0 license
+    'service_identity>=16.0.0',     # MIT license
+    'pynacl>=1.0.1',                # Apache license
+    'pytrie>=0.2',                  # BSD license
+    'pyqrcode>=1.1'                 # BSD license
 ]
 
 # Support for WAMP-SCRAM authentication
@@ -124,13 +136,34 @@ extras_require_nvx = [
     'cffi>=1.11.5',             # MIT license
 ]
 
+# cffi based extension modules to build, currently only NVX
+cffi_modules = []
+if 'AUTOBAHN_USE_NVX' in os.environ:
+    # FIXME: building this extension will make the wheel
+    # produced no longer universal (as in "autobahn-18.4.1-py2.py3-none-any.whl").
+    # on the other hand, I don't know how to selectively include this
+    # based on the install flavor the user has chosen (eg pip install autobahn[nvx]
+    # should make the following be included)
+    cffi_modules.append('autobahn/nvx/_utf8validator.py:ffi')
+
+extras_require_xbr = [
+    'cbor2>=4.1.1',             # MIT license
+    'zlmdb>=19.7.1',            # MIT license
+    'twisted>=18.9.0',          # MIT license
+    'autobahn>=18.11.2',        # MIT license
+    'web3>=4.8.1',              # MIT license
+
+    # FIXME: this is actually only needed for EIP712 ("signed typed data")
+    'py-eth-sig-utils>=0.3.0',  # MIT license (https://github.com/rmeissner/py-eth-sig-utils)
+    'ethereum>=2.3.2',          # MIT license (https://github.com/ethereum/pyethereum/blob/v2.3.2/LICENSE)
+    'eth-abi>=1.3.0',           # MIT license (https://github.com/ethereum/eth-abi)
+]
+
 # everything
 extras_require_all = extras_require_twisted + extras_require_asyncio + \
     extras_require_accelerate + extras_require_compress + \
     extras_require_serialization + extras_require_encryption + \
-    extras_require_scram + extras_require_nvx
-
-# extras_require_all += extras_require_compress
+    extras_require_scram + extras_require_nvx + extras_require_xbr
 
 # development dependencies
 extras_require_dev = [
@@ -203,8 +236,9 @@ setup(
     url='http://crossbar.io/autobahn',
     platforms='Any',
     install_requires=[
-        'six>=1.11.0',      # MIT license
-        'txaio>=18.8.1',    # MIT license
+        'six>=1.11.0',       # MIT license
+        'txaio>=18.8.1',     # MIT license
+        'cryptography>=2.7', # BSD *or* Apache license
     ],
     extras_require={
         'all': extras_require_all,
@@ -217,6 +251,7 @@ setup(
         'scram': extras_require_scram,
         'nvx': extras_require_nvx,
         'dev': extras_require_dev,
+        'xbr': extras_require_xbr,
     },
     tests_require=test_requirements,
     cmdclass={
@@ -226,6 +261,9 @@ setup(
         'autobahn',
         'autobahn.test',
         'autobahn.wamp',
+        'autobahn.wamp.gen',
+        'autobahn.wamp.gen.wamp',
+        'autobahn.wamp.gen.wamp.proto',
         'autobahn.wamp.test',
         'autobahn.websocket',
         'autobahn.websocket.test',
@@ -233,20 +271,20 @@ setup(
         'autobahn.rawsocket.test',
         'autobahn.asyncio',
         'autobahn.twisted',
+        'autobahn.twisted.testing',
         'twisted.plugins',
         'autobahn.nvx',
         'autobahn.nvx.test',
+        'autobahn.xbr',
     ],
-    package_data={'autobahn.asyncio': ['test/*']},
+    package_data={'autobahn.asyncio': ['test/*'], 'xbr': ['./xbr/contracts/*.json']},
+    cffi_modules=cffi_modules,
 
-    cffi_modules=[
-        # FIXME: building this extension will make the wheel
-        # produced no longer unniversal (as in "autobahn-18.4.1-py2.py3-none-any.whl").
-        # on the other hand, I don't know how to selectively include this
-        # based on the install flavor the user has chosen (eg pip install autobahn[nvx]
-        # should make the following be included)
-        # 'autobahn/nvx/_utf8validator.py:ffi'
-    ],
+    entry_points={
+        "console_scripts": [
+            "wamp = autobahn.__main__:_main",
+        ]
+    },
 
     # this flag will make files from MANIFEST.in go into _source_ distributions only
     include_package_data=True,
@@ -278,7 +316,7 @@ setup(
                  "Topic :: Software Development :: Libraries",
                  "Topic :: Software Development :: Libraries :: Python Modules",
                  "Topic :: Software Development :: Object Brokering"],
-    keywords='autobahn crossbar websocket realtime rfc6455 wamp rpc pubsub twisted asyncio'
+    keywords='autobahn crossbar websocket realtime rfc6455 wamp rpc pubsub twisted asyncio xbr data-markets blockchain ethereum'
 )
 
 

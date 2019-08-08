@@ -1,4 +1,4 @@
-.PHONY: test docs pep8
+.PHONY: test docs pep8 build
 
 all:
 	@echo "Targets:"
@@ -12,12 +12,20 @@ all:
 
 # install locally
 install:
+	-pip uninstall -y pytest_asyncio # remove the broken shit
+	-pip uninstall -y pytest_cov # remove the broken shit
 	# enforce use of bundled libsodium
-	SODIUM_INSTALL=bundled pip install -e .[all,dev]
+	AUTOBAHN_USE_NVX=1 SODIUM_INSTALL=bundled pip install -e .[all]
+
+build:
+	-rm -f dist/*
+	# python setup.py sdist bdist_wheel --universal
+	AUTOBAHN_USE_NVX=1 python setup.py sdist bdist_wheel
+	ls -la dist
 
 # upload to our internal deployment system
 upload: clean
-	python setup.py bdist_wheel
+	python setup.py sdist bdist_wheel --universal
 	aws s3 cp --acl public-read \
 		dist/autobahn-*.whl \
 		s3://fabric-deploy/autobahn/
@@ -34,6 +42,11 @@ clean:
 	-rm -rf ./_trial_temp
 	-rm -rf ./.tox
 	-rm -rf ./.eggs
+	-rm -rf ./htmlcov
+	-rm -f ./.coverage
+	-rm -f ./coverage.xml
+	-rm -f ./.coverage.*
+	-rm -rf ~/coverage
 	-rm -f  ./twisted/plugins/dropin.cache
 	-find . -name "*dropin.cache.new" -type f -exec rm -f {} \;
 	-find . -name "*.tar.gz" -type f -exec rm -f {} \;
@@ -70,15 +83,24 @@ test_pytest:
 test_setuptools:
 	python setup.py test
 
-test: flake8 test_twisted test_asyncio
+test:
+	tox -e flake8,py37-twtrunk,py37-asyncio,coverage
+
+#test: flake8 test_twisted test_asyncio
 
 # test under Twisted
 test_twisted:
 	USE_TWISTED=1 trial autobahn
 	#WAMP_ROUTER_URL="ws://127.0.0.1:8080/ws" USE_TWISTED=1 trial autobahn
 
+test_rng:
+	USE_TWISTED=1 trial autobahn.test.test_rng
+
 test_tx_serializer:
 	USE_TWISTED=1 trial autobahn.wamp.test.test_serializer
+
+test_tx_cryptobox:
+	USE_TWISTED=1 trial autobahn.wamp.test.test_cryptobox
 
 test_tx_choosereactor:
 	USE_TWISTED=1 trial autobahn.twisted.test.test_choosereactor
@@ -141,7 +163,9 @@ autopep8:
 
 # This will run pep8, pyflakes and can skip lines that end with # noqa
 flake8:
-	flake8 --ignore=E402,E501,E722,E741,N801,N802,N803,N805,N806,N815 autobahn
+	flake8 --ignore=E402,E501,E722,E741,N801,N802,N803,N805,N806,N815 \
+	    --exclude "autobahn/wamp/message_fbs.py,autobahn/wamp/gen/*"\
+	    autobahn
 
 # run PyLint
 pylint:
@@ -188,3 +212,29 @@ gource:
 	-threads 0 \
 	-bf 0 \
 	autobahn-python.mp4
+
+#
+# generate (a special set of) WAMP message classes from FlatBuffers schema
+#
+
+# input .fbs files for schema
+FBSFILES=./autobahn/wamp/flatbuffers/*.fbs
+
+# flatc compiler to use
+FLATC=flatc
+
+clean_fbs:
+	-rm -rf ./autobahn/wamp/gen/
+
+build_fbs:
+	# generate schema type library (*.bfbs files)
+	$(FLATC) -o ./autobahn/wamp/gen/schema/ --binary --schema --bfbs-comments --bfbs-builtins $(FBSFILES)
+	@find ./autobahn/wamp/gen/schema/ -name "*.bfbs" | wc -l
+
+	# generate schema Python bindings (*.py files)
+	$(FLATC) -o ./autobahn/wamp/gen/ --python $(FBSFILES)
+	@find ./autobahn/wamp/gen/ -name "*.py" | wc -l
+
+	# generate schema C++ bindings (*.cpp/hpp files)
+	# $(FLATC) -o /tmp/gen/ --cpp $(FBSFILES)
+	# @find /tmp/gen/

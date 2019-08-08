@@ -14,6 +14,7 @@ Site Contents
    asynchronous-programming
    websocket/programming
    wamp/programming
+   xbr
    websocket/examples
    wamp/examples
    reference/autobahn

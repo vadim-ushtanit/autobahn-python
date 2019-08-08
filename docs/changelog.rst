@@ -5,6 +5,86 @@
 Changelog
 =========
 
+19.8.1
+------
+
+* new: implement XBR off-chain delegate transaction signing and verification (#1202)
+* new: update XBR for new contract ABIs
+
+19.7.2
+------
+
+* fix: monkey patch re-add removed helper functions removed in eth-abi
+* new: simple blockchain (XBR) client
+* new: update XBR ABI files
+* new: XBR endpoint transaction signing
+* new: client side catching of WAMP URI errors in `session.call|register|publish|subscribe`
+
+19.7.1
+------
+
+* fix: implement client side payload exceed max size; improve max size exceeded handling
+* fix: detect when our transport is "already" closed at connect time (#1215)
+* fix: XBR examples
+
+19.6.2
+------
+
+* fix: add forgotten cryptography dependency (#1205)
+
+19.6.1
+------
+
+* new: XBR client library integrated (#1201)
+* new: add entropy depletion unit tests
+* fix: make CLI tool python2 compatible (#1197)
+* fix: use cryptography pbkdf2 instead of custom (#1198)
+* fix: include tests for packaging (#1194)
+
+19.5.1
+------
+
+* fix: authextra merging (#1191)
+* fix: set default retry_delay_jitter (#1190)
+* new: add rawsocket + twisted example (#1189)
+* new: WebSocket testing support, via Agent-style interface (#1186)
+* new: decorator for on_connectfailure
+* fix: delayed call leakage (#1152)
+* new: CLI client (#1150)
+* fix: set up TLS over proxy properly (#1149)
+* new: expose ser modules (#1148)
+* fix: base64 encodings, add hex encoding (#1146)
+* new: onConnecting callback (with TransportDetails and
+  ConnectingRequest). **Note**: if you've implemented a pure
+  `IWebSocketChannel` without inheriting from Autobahn base classes,
+  you'll need to add an `onConnecting()` method that just does `return
+  None`.
+
+19.3.3
+------
+
+* fix: RegisterOptions should have details|bool parameter (#1143)
+* new: WAMP callee disclosure
+* new: WAMP forward_for in more message types; expose forward_for in options/details types
+* new: expose underlying serializer modules on WAMP object serializers
+* fix: WAMP-cryptosign fix base64 encodings, add hex encoding (#1146)
+
+19.3.2
+------
+
+* fix: import guards for flatbuffers (missed in CI as we run with "all deps installed" there)
+
+19.3.1
+------
+
+* new: add experimental support for WAMP-FlatBuffers serializer: EVENT and PUBLISH messages for now only
+* new: add FlatBuffers schema for WAMP messages
+* fix: improve serializer package preference behavior depending on CPy vs PyPy
+* fix: relax protocol violations: ignore unknown INTERRUPT and GOODBYE already sent; reduce log noise
+* fix: skipping Yield message if transport gets closed before success callback is called (#1119)
+* fix: integer division in logging in py3 (#1120)
+* fix: Await tasks after they've been cancelled in `autobahn.asycio.component.nicely_exit` (#1116)
+
 19.2.1
 ------
 

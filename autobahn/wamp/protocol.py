@@ -1570,11 +1570,11 @@ class ApplicationSession(BaseSession):
         assert(args is None or type(args) in (list, tuple))
         assert(kwargs is None or type(kwargs) == dict)
 
-        message.check_or_raise_uri(procedure,
-                                   message='{}.call()'.format(self.__class__.__name__),
-                                   strict=False,
-                                   allow_empty_components=False,
-                                   allow_none=False)
+        # message.check_or_raise_uri(procedure,
+        #                            message='{}.call()'.format(self.__class__.__name__),
+        #                            strict=False,
+        #                            allow_empty_components=False,
+        #                            allow_none=False)
 
         options = kwargs.pop('options', None)
         if options and not isinstance(options, types.CallOptions):

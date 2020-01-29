@@ -24,24 +24,13 @@
 #
 ###############################################################################
 
-from __future__ import absolute_import
-
 import os
 import sys
 import platform
 from setuptools import setup
 from setuptools.command.test import test as test_command
 
-# remember if we already had six _before_ installation
-try:
-    import six  # noqa
-    _HAD_SIX = True
-except ImportError:
-    _HAD_SIX = False
-
 CPY = platform.python_implementation() == 'CPython'
-PY3 = sys.version_info >= (3,)
-PY33 = (3, 3) <= sys.version_info < (3, 4)
 
 # read version string
 with open('autobahn/_version.py') as f:
@@ -52,28 +41,11 @@ with open('README.rst') as f:
     docstr = f.read()
 
 # Twisted dependencies (be careful bumping these minimal versions,
-# as we make claims to support older Twisted!)
+# as we make claim to support older Twisted!)
 extras_require_twisted = [
     "zope.interface>=3.6.0",        # Zope Public License
-    "Twisted >= 12.1.0"             # MIT license
+    "twisted>=15.4.0",              # MIT license (https://pypi.org/project/Twisted/15.4.0/)
 ]
-
-# asyncio dependencies
-if PY3:
-    if PY33:
-        # "Tulip"
-        extras_require_asyncio = [
-            "asyncio>=3.4.3"        # Apache 2.0
-        ]
-    else:
-        # Python 3.4+ has asyncio builtin
-        extras_require_asyncio = []
-else:
-    # backport of asyncio for Python 2
-    extras_require_asyncio = [
-        "trollius>=2.0",            # Apache 2.0
-        "futures>=3.0.4"            # BSD license
-    ]
 
 # C-based WebSocket acceleration (only use on CPython, not PyPy!)
 if CPY and sys.platform != 'win32':
@@ -86,10 +58,8 @@ else:
 
 # non-standard WebSocket compression support (FIXME: consider removing altogether)
 # Ubuntu: sudo apt-get install libsnappy-dev
-# lz4: do we need that anyway?
 extras_require_compress = [
     "python-snappy>=0.5",       # BSD license
-    "lz4>=0.7.0"                # BSD license
 ]
 
 # accelerated JSON and non-JSON WAMP serialization support (namely MessagePack, CBOR and UBJSON)
@@ -106,7 +76,7 @@ else:
     ])
 
 extras_require_serialization.extend([
-    'cbor2>=4.1.2',             # MIT license
+    'cbor2>=5.0.1',             # MIT license
     'cbor>=1.0.0',              # Apache 2.0 license
     'py-ubjson>=0.8.4',         # Apache 2.0 license
     'flatbuffers>=1.10',        # Apache 2.0 license
@@ -153,17 +123,23 @@ extras_require_xbr = [
     'autobahn>=18.11.2',        # MIT license
     'web3>=4.8.1',              # MIT license
 
-    # FIXME: this is actually only needed for EIP712 ("signed typed data")
-    'py-eth-sig-utils>=0.3.0',  # MIT license (https://github.com/rmeissner/py-eth-sig-utils)
-    'ethereum>=2.3.2',          # MIT license (https://github.com/ethereum/pyethereum/blob/v2.3.2/LICENSE)
+    # the following is needed for EIP712 ("signed typed data"):
+    'py-eth-sig-utils>=0.4.0',  # MIT license (https://github.com/rmeissner/py-eth-sig-utils)
+    'py-ecc>=1.7.1',            # MIT license (https://github.com/ethereum/py_ecc)
     'eth-abi>=1.3.0',           # MIT license (https://github.com/ethereum/eth-abi)
+
+    # the following is needed (at least) for BIP32/39 mnemonic processing
+    'mnemonic>=0.13',           # MIT license (https://github.com/trezor/python-mnemonic)
+
+    # py-multihash 0.2.3 has requirement base58<2.0,>=1.0.2 (https://github.com/crossbario/crossbarfx/issues/469)
+    'base58<2.0,>=1.0.2',       # MIT license (https://github.com/keis/base58)
+    'ecdsa>=0.13',              # MIT license (https://github.com/warner/python-ecdsa)
 ]
 
 # everything
-extras_require_all = extras_require_twisted + extras_require_asyncio + \
-    extras_require_accelerate + extras_require_compress + \
-    extras_require_serialization + extras_require_encryption + \
-    extras_require_scram + extras_require_nvx + extras_require_xbr
+extras_require_all = extras_require_twisted + extras_require_accelerate + extras_require_compress + \
+                     extras_require_serialization + extras_require_encryption + extras_require_scram + \
+                     extras_require_nvx + extras_require_xbr
 
 # development dependencies
 extras_require_dev = [
@@ -172,7 +148,6 @@ extras_require_dev = [
     "pep8-naming>=0.3.3",               # MIT license
     "flake8>=2.5.1",                    # MIT license
     "pyflakes>=1.0.0",                  # MIT license
-    "mock>=1.3.0",                      # BSD license
 
     # pytest 3.3.0 has dropped support for Python 3.3
     # https://docs.pytest.org/en/latest/changelog.html#pytest-3-3-0-2017-11-23
@@ -190,18 +165,16 @@ extras_require_dev = [
     'wheel',                            # MIT license
 ]
 
-if PY3:
-    extras_require_dev.extend([
-        # pytest-asyncio 0.6 has dropped support for Py <3.5
-        # https://github.com/pytest-dev/pytest-asyncio/issues/57
-        'pytest_asyncio<0.6',               # Apache 2.0
-        'pytest-aiohttp',                   # Apache 2.0
-    ])
+extras_require_dev.extend([
+    # pytest-asyncio 0.6 has dropped support for Py <3.5
+    # https://github.com/pytest-dev/pytest-asyncio/issues/57
+    'pytest_asyncio<0.6',  # Apache 2.0
+    'pytest-aiohttp',  # Apache 2.0
+])
 
 # for testing by users with "python setup.py test" (not Tox, which we use)
 test_requirements = [
     "pytest>=2.8.6,<3.3.0",             # MIT license
-    "mock>=1.3.0",                      # BSD license
 ]
 
 
@@ -236,13 +209,12 @@ setup(
     url='http://crossbar.io/autobahn',
     platforms='Any',
     install_requires=[
-        'six>=1.11.0',       # MIT license
-        'txaio>=18.8.1',     # MIT license
+        'txaio>=20.1.1',     # MIT license
         'cryptography>=2.7', # BSD *or* Apache license
     ],
     extras_require={
         'all': extras_require_all,
-        'asyncio': extras_require_asyncio,
+        'asyncio': [], # backwards compatibility
         'twisted': extras_require_twisted,
         'accelerate': extras_require_accelerate,
         'compress': extras_require_compress,
@@ -272,12 +244,15 @@ setup(
         'autobahn.asyncio',
         'autobahn.twisted',
         'autobahn.twisted.testing',
-        'twisted.plugins',
         'autobahn.nvx',
         'autobahn.nvx.test',
         'autobahn.xbr',
+        'twisted.plugins',
     ],
-    package_data={'autobahn.asyncio': ['test/*'], 'xbr': ['./xbr/contracts/*.json']},
+    package_data={
+        'autobahn.asyncio': ['./test/*'],
+        'xbr': ['./xbr/contracts/*.json'],
+    },
     cffi_modules=cffi_modules,
 
     entry_points={
@@ -291,6 +266,8 @@ setup(
 
     zip_safe=False,
 
+    python_requires='>=3.5',
+
     # http://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=["License :: OSI Approved :: MIT License",
                  "Development Status :: 5 - Production/Stable",
@@ -299,13 +276,11 @@ setup(
                  "Intended Audience :: Developers",
                  "Operating System :: OS Independent",
                  "Programming Language :: Python",
-                 "Programming Language :: Python :: 2",
-                 "Programming Language :: Python :: 2.7",
                  "Programming Language :: Python :: 3",
-                 "Programming Language :: Python :: 3.4",
                  "Programming Language :: Python :: 3.5",
                  "Programming Language :: Python :: 3.6",
                  "Programming Language :: Python :: 3.7",
+                 "Programming Language :: Python :: 3.8",
                  "Programming Language :: Python :: Implementation :: CPython",
                  "Programming Language :: Python :: Implementation :: PyPy",
                  "Programming Language :: Python :: Implementation :: Jython",
@@ -331,15 +306,10 @@ else:
     # Make Twisted regenerate the dropin.cache, if possible. This is necessary
     # because in a site-wide install, dropin.cache cannot be rewritten by
     # normal users.
-    if _HAD_SIX:
-        # only proceed if we had had six already _before_ installing AutobahnPython,
-        # since it produces errs/warns otherwise
-        try:
-            from twisted.plugin import IPlugin, getPlugins
-            list(getPlugins(IPlugin))
-        except Exception as e:
-            print("Failed to update Twisted plugin cache: {0}".format(e))
-        else:
-            print("Twisted dropin.cache regenerated.")
+    try:
+        from twisted.plugin import IPlugin, getPlugins
+        list(getPlugins(IPlugin))
+    except Exception as e:
+        print("Failed to update Twisted plugin cache: {0}".format(e))
     else:
-        print("Warning: regenerate of Twisted dropin.cache skipped (can't run when six wasn't there before)")
+        print("Twisted dropin.cache regenerated.")

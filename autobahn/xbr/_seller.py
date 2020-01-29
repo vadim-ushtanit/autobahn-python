@@ -33,16 +33,16 @@ from autobahn.wamp.types import RegisterOptions, CallDetails
 from autobahn.wamp.exception import ApplicationError, TransportLost
 from autobahn.wamp.protocol import ApplicationSession
 from ._util import unpack_uint256, pack_uint256
-from zlmdb import time_ns
+from txaio import time_ns
 
 import cbor2
 import eth_keys
-from eth_account import Account
+# from eth_account import Account
 import nacl.secret
 import nacl.utils
 import nacl.public
 import txaio
-import web3
+# import web3
 
 from ._util import hl, recover_eip712_signer, sign_eip712_data
 
@@ -176,8 +176,8 @@ class PayingChannel(object):
 
 
 class SimpleSeller(object):
-    log = txaio.make_logger()
 
+    log = None
     KeySeries = None
 
     STATE_NONE = 0
@@ -203,6 +203,8 @@ class SimpleSeller(object):
         assert type(seller_key) == bytes and len(seller_key) == 32, 'seller delegate must be bytes[32], but got "{}"'.format(seller_key)
         assert provider_id is None or type(provider_id) == str, 'provider_id must be None or string, but got "{}"'.format(provider_id)
 
+        self.log = txaio.make_logger()
+
         # current seller state
         self._state = SimpleSeller.STATE_NONE
 
@@ -216,13 +218,17 @@ class SimpleSeller(object):
         self._pkey = eth_keys.keys.PrivateKey(seller_key)
 
         # seller ethereum private account from raw private key
-        self._acct = Account.privateKeyToAccount(self._pkey)
+        # FIXME
+        # self._acct = Account.privateKeyToAccount(self._pkey)
+        self._acct = None
 
         # seller ethereum account canonical address
         self._addr = self._pkey.public_key.to_canonical_address()
 
         # seller ethereum account canonical checksummed address
-        self._caddr = web3.Web3.toChecksumAddress(self._addr)
+        # FIXME
+        # self._caddr = web3.Web3.toChecksumAddress(self._addr)
+        self._caddr = None
 
         # seller provider ID
         self._provider_id = provider_id or str(self._pkey.public_key)
@@ -334,8 +340,9 @@ class SimpleSeller(object):
                 self.log.warn('Failed to place offer for key! Retrying {retries}/5 ..', retries=retries)
                 await asyncio.sleep(1)
 
-        key_series = SimpleSeller.KeySeries(api_id, price, interval, on_rotate)
+        key_series = self.KeySeries(api_id, price, interval, on_rotate)
         self._keys[api_id] = key_series
+        self.log.info('Created new key series {key_series}', key_series=key_series)
 
         return key_series
 
@@ -354,7 +361,7 @@ class SimpleSeller(object):
         self._session_regs = []
 
         self.log.info('Start selling from seller delegate address {address} (public key 0x{public_key}..)',
-                      address=hl('0x' + self._acct.address),
+                      address=hl(self._caddr),
                       public_key=binascii.b2a_hex(self._pkey.public_key[:10]).decode())
 
         procedure = 'xbr.provider.{}.sell'.format(self._provider_id)

@@ -1,12 +1,8 @@
-import os
 import argparse
-import six
-import txaio
+import asyncio
+import os
 
-try:
-    import asyncio
-except ImportError:
-    import trollius as asyncio
+import txaio
 
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 
@@ -18,7 +14,7 @@ class ClientSession(ApplicationSession):
 
     def onConnect(self):
         self.log.info("Client connected")
-        self.join(self.config.realm, [u'anonymous'])
+        self.join(self.config.realm, ['anonymous'])
 
     def onChallenge(self, challenge):
         self.log.info("Challenge for method {authmethod} received", authmethod=challenge.method)
@@ -46,14 +42,14 @@ class ClientSession(ApplicationSession):
 if __name__ == '__main__':
 
     # Crossbar.io connection configuration
-    url = os.environ.get('CBURL', u'ws://localhost:8080/ws')
-    realm = os.environ.get('CBREALM', u'realm1')
+    url = os.environ.get('CBURL', 'ws://localhost:8080/ws')
+    realm = os.environ.get('CBREALM', 'realm1')
 
     # parse command line parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug output.')
-    parser.add_argument('--url', dest='url', type=six.text_type, default=url, help='The router URL (default: "ws://localhost:8080/ws").')
-    parser.add_argument('--realm', dest='realm', type=six.text_type, default=realm, help='The realm to join (default: "realm1").')
+    parser.add_argument('--url', dest='url', type=str, default=url, help='The router URL (default: "ws://localhost:8080/ws").')
+    parser.add_argument('--realm', dest='realm', type=str, default=realm, help='The realm to join (default: "realm1").')
 
     args = parser.parse_args()
 
@@ -65,7 +61,7 @@ if __name__ == '__main__':
 
     # any extra info we want to forward to our ClientSession (in self.config.extra)
     extra = {
-        u'foobar': u'A custom value'
+        'foobar': 'A custom value'
     }
 
     # now actually run a WAMP client using our session class ClientSession

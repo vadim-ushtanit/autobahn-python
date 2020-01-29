@@ -24,8 +24,6 @@
 #
 ###############################################################################
 
-from __future__ import print_function
-
 from os import environ
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
@@ -43,7 +41,7 @@ class Component(ApplicationSession):
     @inlineCallbacks
     def test(self):
         self.received = 0
-        self.sub = yield self.subscribe(self.on_event, u'com.myapp.topic1')
+        self.sub = yield self.subscribe(self.on_event, 'com.myapp.topic1')
         print("Subscribed with subscription ID {}".format(self.sub.id))
 
     @inlineCallbacks
@@ -71,10 +69,7 @@ class Component(ApplicationSession):
 
 
 if __name__ == '__main__':
-    import six
-    url = environ.get("AUTOBAHN_DEMO_ROUTER", u"ws://127.0.0.1:8080/ws")
-    if six.PY2 and type(url) == six.binary_type:
-        url = url.decode('utf8')
-    realm = u"crossbardemo"
+    url = environ.get("AUTOBAHN_DEMO_ROUTER", "ws://127.0.0.1:8080/ws")
+    realm = "crossbardemo"
     runner = ApplicationRunner(url, realm)
     runner.run(Component)

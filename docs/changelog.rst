@@ -5,6 +5,52 @@
 Changelog
 =========
 
+20.1.3
+------
+
+* fix: CI building (caching?) issue "corrupt ZIP file"
+* fix: update docker image build scripts and add ARM64/PyPy
+* fix: update XBR ABI files
+* fix: use :func:`txaio.time_ns` and drop deprecated :func:`autobahn.util.time_ns`
+* fix: update project README and docs for supported python versions (#1296)
+* fix: WebSocket protocol instances now raise `autobahn.exception.Disconnected` when sending on a closed connection (#1002)
+* fix: version conflict in xbr downstream application dependency (crossbarfx) (#1295)
+
+20.1.2
+------
+
+* fix: add `python_requires>=3.5` to prevent installation on python 2 (#1293)
+
+20.1.1
+------
+
+* IMPORTANT: beginning release v20.1.1, Autobahn|Python only supports Python 3.5 or later.
+* fix: first part of cleaning up code, dropping Python 2 support (#1282).
+
+19.11.2
+-------
+
+* IMPORTANT: release v19.11.2 will be the last release supporting Python 2. We will support Python 3.5 and later beginning with Autobahn v20.1.1.
+* fix: add docs for parameters to component.py (#1276)
+* new: statistics tracking on WAMP serializers :class:`autobahn.wamp.serializer.Serializer`
+* new: helper :func:`autobahn.util.time_ns`
+
+19.11.1
+-------
+
+* fix: argument type check for fragmentSize in sendMessage
+* new: start_loop option for WAMP components
+* new: ethereum bip39/32 helpers
+* new: enable XBR in Docker image build scripts
+
+19.10.1
+-------
+
+* new: updated docker image scripts
+* new: add WAMP serializer in use to SessionDetails
+* fix: partial support for xb buyers/sellers in pypy
+* fix: remove dependency on "ethereum" package (part of pypy support)
+
 19.9.3
 ------
 

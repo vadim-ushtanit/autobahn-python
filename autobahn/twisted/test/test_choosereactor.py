@@ -24,14 +24,11 @@
 #
 ###############################################################################
 
-from __future__ import absolute_import
-
 import sys
+from unittest.mock import Mock
 
 import twisted.internet
 from twisted.trial import unittest
-
-from mock import Mock
 
 from autobahn.twisted import choosereactor
 

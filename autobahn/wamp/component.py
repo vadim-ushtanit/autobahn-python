@@ -25,10 +25,7 @@
 ###############################################################################
 
 
-from __future__ import absolute_import
-
 import itertools
-import six
 import random
 from functools import partial
 
@@ -190,7 +187,7 @@ def _create_transport(index, transport, check_native_endpoint=None):
             if not isinstance(transport['serializers'], (list, tuple)):
                 raise ValueError("'serializers' must be a list of strings")
             if not all([
-                    isinstance(s, (six.text_type, str))
+                    isinstance(s, (str, str))
                     for s in transport['serializers']]):
                 raise ValueError("'serializers' must be a list of strings")
             valid_serializers = SERID_TO_SER.keys()
@@ -202,7 +199,7 @@ def _create_transport(index, transport, check_native_endpoint=None):
                             ', '.join([repr(s) for s in valid_serializers]),
                         )
                     )
-        serializer_config = transport.get('serializers', [u'cbor', u'json'])
+        serializer_config = transport.get('serializers', ['cbor', 'json'])
 
     elif kind == 'rawsocket':
         if 'endpoint' not in transport:
@@ -232,11 +229,11 @@ def _create_transport(index, transport, check_native_endpoint=None):
             raise ValueError("'serializers' is only for websocket; use 'serializer'")
         # always a list; len == 1 for rawsocket
         if 'serializer' in transport:
-            if not isinstance(transport['serializer'], (six.text_type, str)):
+            if not isinstance(transport['serializer'], (str, str)):
                 raise ValueError("'serializer' must be a string")
             serializer_config = [transport['serializer']]
         else:
-            serializer_config = [u'cbor']
+            serializer_config = ['cbor']
 
     else:
         assert False, 'should not arrive here'
@@ -368,8 +365,8 @@ class Component(ObservableMixin):
         For example::
 
             @component.subscribe(
-                u"some.topic",
-                options=SubscribeOptions(match=u'prefix'),
+                "some.topic",
+                options=SubscribeOptions(match='prefix'),
             )
             def topic(*args, **kw):
                 print("some.topic({}, {}): event received".format(args, kw))
@@ -391,7 +388,7 @@ class Component(ObservableMixin):
         For example::
 
             @component.register(
-                u"com.example.add",
+                "com.example.add",
                 options=RegisterOptions(invoke='round_robin'),
             )
             def add(*args, **kw):
@@ -407,7 +404,7 @@ class Component(ObservableMixin):
             return fn
         return decorator
 
-    def __init__(self, main=None, transports=None, config=None, realm=u'realm1', extra=None,
+    def __init__(self, main=None, transports=None, config=None, realm='realm1', extra=None,
                  authentication=None, session_factory=None, is_fatal=None):
         """
         :param main: After a transport has been connected and a session
@@ -436,6 +433,15 @@ class Component(ObservableMixin):
                       instance (such as returned from
                       ``twisted.internet.ssl.optionsForClientTLS``) or
                       ``CertificateOptions`` instance.
+                - ``max_retries``: Maximum number of reconnection attempts. Unlimited if set to -1.
+                - ``initial_retry_delay``: Initial delay for reconnection attempt in seconds (Default: 1.0s).
+                - ``max_retry_delay``: Maximum delay for reconnection attempts in seconds (Default: 60s).
+                - ``retry_delay_growth``: The growth factor applied to the retry delay between reconnection attempts (Default 1.5).
+                - ``retry_delay_jitter``: A 0-argument callable that introduces nose into the delay. (Default random.random)
+                - ``serializer`` (only for raw socket): Specify an accepted serializer (e.g. 'json', 'msgpack', 'cbor', 'ubjson', 'flatbuffers')
+                - ``serializers``: Specify list of accepted serializers
+                - ``options``: tbd
+                - ``proxy``: tbd
 
         :type transports: None or unicode or list of dicts
 
@@ -479,10 +485,10 @@ class Component(ObservableMixin):
 
         # use WAMP-over-WebSocket to localhost when no transport is specified at all
         if transports is None:
-            transports = u'ws://127.0.0.1:8080/ws'
+            transports = 'ws://127.0.0.1:8080/ws'
 
         # allows to provide an URL instead of a list of transports
-        if isinstance(transports, (six.text_type, str)):
+        if isinstance(transports, (str, str)):
             url = transports
             # 'endpoint' will get filled in by parsing the 'url'
             transport = {
@@ -595,17 +601,17 @@ class Component(ObservableMixin):
                 # if txaio.using_asyncio and isinstance(fail.value, asyncio.CancelledError):
                 #     unrecoverable_error = True
 
-                self.log.debug(u'component failed: {error}', error=txaio.failure_message(fail))
-                self.log.debug(u'{tb}', tb=txaio.failure_format_traceback(fail))
+                self.log.debug('component failed: {error}', error=txaio.failure_message(fail))
+                self.log.debug('{tb}', tb=txaio.failure_format_traceback(fail))
                 # If this is a "fatal error" that will never work,
                 # we bail out now
                 if isinstance(fail.value, ApplicationError):
-                    self.log.error(u"{msg}", msg=fail.value.error_message())
+                    self.log.error("{msg}", msg=fail.value.error_message())
 
                 elif isinstance(fail.value, OSError):
                     # failed to connect entirely, like nobody
                     # listening etc.
-                    self.log.info(u"Connection failed: {msg}", msg=txaio.failure_message(fail))
+                    self.log.info("Connection failed: {msg}", msg=txaio.failure_message(fail))
 
                 elif self._is_ssl_error(fail.value):
                     # Quoting pyOpenSSL docs: "Whenever
@@ -619,10 +625,10 @@ class Component(ObservableMixin):
                     # (and 'args' is a 1-tuple containing the above
                     # 3-tuple...)
                     ssl_lib, ssl_func, ssl_reason = fail.value.args[0][0]
-                    self.log.error(u"TLS failure: {reason}", reason=ssl_reason)
+                    self.log.error("TLS failure: {reason}", reason=ssl_reason)
                 else:
                     self.log.error(
-                        u'Connection failed: {error}',
+                        'Connection failed: {error}',
                         error=txaio.failure_message(fail),
                     )
 
@@ -668,7 +674,7 @@ class Component(ObservableMixin):
             self.log.debug('Entering re-connect loop')
 
             if not self._can_reconnect():
-                err_msg = u"Component failed: Exhausted all transport connect attempts"
+                err_msg = "Component failed: Exhausted all transport connect attempts"
                 self.log.info(err_msg)
                 try:
                     raise RuntimeError(err_msg)
@@ -761,11 +767,11 @@ class Component(ObservableMixin):
                         details=details,
                     )
                     if not txaio.is_called(done):
-                        if details.reason in [u"wamp.close.normal"]:
+                        if details.reason in ["wamp.close.normal"]:
                             txaio.resolve(done, None)
                         else:
                             f = txaio.create_failure(
-                                ApplicationError(details.reason)
+                                ApplicationError(details.reason, details.message)
                             )
                             txaio.reject(done, f)
                 session.on('leave', on_leave)
@@ -809,7 +815,7 @@ class Component(ObservableMixin):
                     if not txaio.is_called(done):
                         if not was_clean:
                             self.log.warn(
-                                u"Session disconnected uncleanly"
+                                "Session disconnected uncleanly"
                             )
                         else:
                             # eg the session has left the realm, and the transport was properly

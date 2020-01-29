@@ -24,8 +24,7 @@
 #
 ###############################################################################
 
-from __future__ import absolute_import
-
+import copy
 import math
 import txaio
 
@@ -186,7 +185,7 @@ class WampRawSocketProtocol(Int32StringReceiver):
             else:
                 payload_len = len(payload)
                 if 0 < self._max_len_send < payload_len:
-                    emsg = u'tried to send RawSocket message with size {} exceeding payload limit of {} octets'.format(
+                    emsg = 'tried to send RawSocket message with size {} exceeding payload limit of {} octets'.format(
                         payload_len, self._max_len_send)
                     self.log.warn(emsg)
                     raise PayloadExceededError(emsg)
@@ -271,7 +270,7 @@ class WampRawSocketServerProtocol(WampRawSocketProtocol):
                 #
                 ser_id = ord(self._handshake_bytes[1:2]) & 0x0F
                 if ser_id in self.factory._serializers:
-                    self._serializer = self.factory._serializers[ser_id]
+                    self._serializer = copy.copy(self.factory._serializers[ser_id])
                     self.log.debug(
                         "WampRawSocketServerProtocol: client wants to use serializer '{serializer}'",
                         serializer=ser_id,
@@ -315,7 +314,7 @@ class WampRawSocketServerProtocol(WampRawSocketProtocol):
             if data:
                 self.dataReceived(data)
 
-    def get_channel_id(self, channel_id_type=u'tls-unique'):
+    def get_channel_id(self, channel_id_type='tls-unique'):
         """
         Implements :func:`autobahn.wamp.interfaces.ITransport.get_channel_id`
         """
@@ -334,7 +333,7 @@ class WampRawSocketClientProtocol(WampRawSocketProtocol):
 
     def connectionMade(self):
         WampRawSocketProtocol.connectionMade(self)
-        self._serializer = self.factory._serializer
+        self._serializer = copy.copy(self.factory._serializer)
 
         # we request the peer to send messages of maximum length 2**reply_max_len_exp
         request_max_len_exp = int(math.ceil(math.log(self._max_message_size, 2)))
@@ -407,7 +406,7 @@ class WampRawSocketClientProtocol(WampRawSocketProtocol):
             if data:
                 self.dataReceived(data)
 
-    def get_channel_id(self, channel_id_type=u'tls-unique'):
+    def get_channel_id(self, channel_id_type='tls-unique'):
         """
         Implements :func:`autobahn.wamp.interfaces.ITransport.get_channel_id`
         """

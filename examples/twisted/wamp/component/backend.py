@@ -9,7 +9,6 @@ from twisted.internet.ssl import CertificateOptions
 from twisted.internet.ssl import optionsForClientTLS, Certificate
 from OpenSSL import crypto
 from os.path import join, split
-import six
 
 
 examples_dir = join(split(__file__)[0], '..', '..', '..')
@@ -17,40 +16,40 @@ cert_fname = join(examples_dir, 'router', '.crossbar', 'server.crt')
 if False:
     cert = crypto.load_certificate(
         crypto.FILETYPE_PEM,
-        six.u(open(cert_fname, 'r').read())
+        open(cert_fname, 'r').read()
     )
     # tell Twisted to use just the one certificate we loaded to verify connections
     options = CertificateOptions(
         trustRoot=OpenSSLCertificateAuthorities([cert]),
     )
 else:
-    cert = Certificate.loadPEM(six.u(open(cert_fname, 'r').read()))
+    cert = Certificate.loadPEM(open(cert_fname, 'r').read())
     options = optionsForClientTLS(
-        hostname=u'localhost',
+        hostname='localhost',
         trustRoot=cert,
     )
 
 component = Component(
     transports=[
         {
-            u"type": u"websocket",
-            u"url": u"ws://localhost:8080/ws",
-            u"endpoint": {
-                u"type": u"tcp",
-                u"host": u"localhost",
-                u"port": 8080,
+            "type": "websocket",
+            "url": "ws://localhost:8080/ws",
+            "endpoint": {
+                "type": "tcp",
+                "host": "localhost",
+                "port": 8080,
 #                "tls": options,
 #                "tls": {
-#                    u"hostname": u"localhost",
-#                    u"trust_root": cert_fname,
+#                    "hostname": "localhost",
+#                    "trust_root": cert_fname,
 #                },
             },
-            u"options": {
-                u"open_handshake_timeout": 100,
+            "options": {
+                "open_handshake_timeout": 100,
             }
         },
     ],
-    realm=u"crossbardemo",
+    realm="crossbardemo",
 )
 
 
@@ -60,7 +59,7 @@ def join(session, details):
 
 
 @component.register(
-    u"example.foo",
+    "example.foo",
     options=RegisterOptions(details_arg='details'),
 )
 @inlineCallbacks

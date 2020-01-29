@@ -51,14 +51,14 @@ class Component(ApplicationSession):
                 # res is an Failure instance
                 print("Failed to subscribe handler: {}".format(res))
 
-    @wamp.subscribe(u'com.myapp.topic1')
+    @wamp.subscribe('com.myapp.topic1')
     def onEvent1(self, i):
         print("Got event on topic1: {}".format(i))
         self.received += 1
         if self.received > 5:
             self.leave()
 
-    @wamp.subscribe(u'com.myapp.topic2')
+    @wamp.subscribe('com.myapp.topic2')
     def onEvent2(self, msg):
         print("Got event on topic2: {}".format(msg))
 
@@ -67,10 +67,7 @@ class Component(ApplicationSession):
 
 
 if __name__ == '__main__':
-    import six
-    url = environ.get("AUTOBAHN_DEMO_ROUTER", u"ws://127.0.0.1:8080/ws")
-    if six.PY2 and type(url) == six.binary_type:
-        url = url.decode('utf8')
-    realm = u"crossbardemo"
+    url = environ.get("AUTOBAHN_DEMO_ROUTER", "ws://127.0.0.1:8080/ws")
+    realm = "crossbardemo"
     runner = ApplicationRunner(url, realm)
     runner.run(Component)

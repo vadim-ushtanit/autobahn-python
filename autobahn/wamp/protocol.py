@@ -1330,7 +1330,7 @@ class ApplicationSession(BaseSession):
         """
         Implements :func:`autobahn.wamp.interfaces.ISession.onLeave`
         """
-        if details.reason != CloseDetails.REASON_DEFAULT:
+        if details.reason not in [CloseDetails.REASON_DEFAULT, CloseDetails.REASON_GOODBYE]:
             self.log.warn('session closed with reason {reason} [{message}]', reason=details.reason, message=details.message)
 
         # fire ApplicationError on any currently outstanding requests

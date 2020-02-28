@@ -526,6 +526,7 @@ class CloseDetails(object):
     """
     REASON_DEFAULT = "wamp.close.normal"
     REASON_TRANSPORT_LOST = "wamp.close.transport_lost"
+    REASON_GOODBYE = "wamp.error.goodbye_and_out"
 
     __slots__ = (
         'reason',

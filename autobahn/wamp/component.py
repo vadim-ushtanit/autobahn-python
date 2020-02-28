@@ -606,7 +606,7 @@ class Component(ObservableMixin):
                 # If this is a "fatal error" that will never work,
                 # we bail out now
                 if isinstance(fail.value, ApplicationError):
-                    self.log.error("{msg}", msg=fail.value.error_message())
+                    self.log.error("ApplicationError {msg}", msg=fail.value.error_message())
 
                 elif isinstance(fail.value, OSError):
                     # failed to connect entirely, like nobody

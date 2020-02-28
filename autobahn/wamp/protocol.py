@@ -23,6 +23,7 @@
 # THE SOFTWARE.
 #
 ###############################################################################
+from typing import Union
 
 import txaio
 import inspect
@@ -35,8 +36,8 @@ from autobahn.wamp import message
 from autobahn.wamp import types
 from autobahn.wamp import role
 from autobahn.wamp import exception
-from autobahn.wamp.exception import ApplicationError, ProtocolError, SessionNotReady, SerializationError
-from autobahn.wamp.interfaces import ISession, IPayloadCodec, IAuthenticator  # noqa
+from autobahn.wamp.exception import ApplicationError, ProtocolError, SessionNotReady, SerializationError, TypeCheckError
+from autobahn.wamp.interfaces import IPayloadCodec, IAuthenticator  # noqa
 from autobahn.wamp.types import SessionDetails, CloseDetails, EncodedPayload
 from autobahn.exception import PayloadExceededError
 from autobahn.wamp.request import \
@@ -457,7 +458,7 @@ class ApplicationSession(BaseSession):
         """
         Implements :func:`autobahn.wamp.interfaces.ISession.onUserError`
         """
-        if isinstance(fail.value, exception.ApplicationError):
+        if hasattr(fail, 'value') and isinstance(fail.value, exception.ApplicationError):
             self.log.warn('{klass}.onUserError(): "{msg}"',
                           klass=self.__class__.__name__,
                           msg=fail.value.error_message())
@@ -489,6 +490,30 @@ class ApplicationSession(BaseSession):
                 tb=txaio.failure_format_traceback(txaio.create_failure()),
             )
         return None
+
+    def type_check(self, func):
+        """
+        Does parameter type checking and validation against type hints
+        and appropriately tells the user code and the caller (through router).
+        """
+        async def _type_check(*args, **kwargs):
+            # Converge both args and kwargs into a dictionary
+            arguments = inspect.getcallargs(func, *args, **kwargs)
+            response = []
+            for name, kind in func.__annotations__.items():
+                if name in arguments:
+                    if getattr(kind, "__origin__", None) == Union:
+                        if not isinstance(arguments[name], kind.__args__):
+                            response.append(
+                                "'{}' required={} got={}".format(name, kind.__name__, type(arguments[name]).__name__))
+                    elif not isinstance(arguments[name], kind):
+                        response.append(
+                            "'{}' required={} got={}".format(name, kind.__name__, type(arguments[name]).__name__))
+            if response:
+                raise TypeCheckError(', '.join(response))
+            return await txaio.as_future(func, *args, **kwargs)
+
+        return _type_check
 
     def onMessage(self, msg):
         """
@@ -1442,18 +1467,18 @@ class ApplicationSession(BaseSession):
         return on_reply
 
     @public
-    def subscribe(self, handler, topic=None, options=None):
+    def subscribe(self, handler, topic=None, options=None, check_types=False):
         """
         Implements :func:`autobahn.wamp.interfaces.ISubscriber.subscribe`
         """
-        assert((callable(handler) and topic is not None) or hasattr(handler, '__class__'))
+        assert((callable(handler) and topic is not None) or (hasattr(handler, '__class__') and not check_types))
         assert(topic is None or type(topic) == str)
         assert(options is None or isinstance(options, types.SubscribeOptions))
 
         if not self._transport:
             raise exception.TransportLost()
 
-        def _subscribe(obj, fn, topic, options):
+        def _subscribe(obj, fn, topic, options, check_types):
             message.check_or_raise_uri(topic,
                                        message='{}.subscribe()'.format(self.__class__.__name__),
                                        strict=False,
@@ -1462,6 +1487,8 @@ class ApplicationSession(BaseSession):
 
             request_id = self._request_id_gen.next()
             on_reply = txaio.create_future()
+            if check_types:
+                fn = self.type_check(fn)
             handler_obj = Handler(fn, obj, options.details_arg if options else None)
             self._subscribe_reqs[request_id] = SubscribeRequest(request_id, topic, on_reply, handler_obj)
 
@@ -1485,7 +1512,7 @@ class ApplicationSession(BaseSession):
 
         if callable(handler):
             # subscribe a single handler
-            return _subscribe(None, handler, topic, options)
+            return _subscribe(None, handler, topic, options, check_types)
 
         else:
 
@@ -1503,7 +1530,7 @@ class ApplicationSession(BaseSession):
                                     subopts = types.SubscribeOptions(match="wildcard")
                                 else:
                                     subopts = types.SubscribeOptions(match="exact")
-                            on_replies.append(_subscribe(handler, proc, _uri, subopts))
+                            on_replies.append(_subscribe(handler, proc, _uri, subopts, pat._check_types))
 
             # XXX needs coverage
             return txaio.gather(on_replies, consume_exceptions=True)
@@ -1641,11 +1668,11 @@ class ApplicationSession(BaseSession):
         return on_reply
 
     @public
-    def register(self, endpoint, procedure=None, options=None, prefix=None):
+    def register(self, endpoint, procedure=None, options=None, prefix=None, check_types=False):
         """
         Implements :func:`autobahn.wamp.interfaces.ICallee.register`
         """
-        assert((callable(endpoint) and procedure is not None) or hasattr(endpoint, '__class__'))
+        assert((callable(endpoint) and procedure is not None) or (hasattr(endpoint, '__class__') and not check_types))
         assert(procedure is None or type(procedure) == str)
         assert(options is None or isinstance(options, types.RegisterOptions))
         assert prefix is None or isinstance(prefix, str)
@@ -1653,7 +1680,7 @@ class ApplicationSession(BaseSession):
         if not self._transport:
             raise exception.TransportLost()
 
-        def _register(obj, fn, procedure, options):
+        def _register(obj, fn, procedure, options, check_types):
             message.check_or_raise_uri(procedure,
                                        message='{}.register()'.format(self.__class__.__name__),
                                        strict=False,
@@ -1662,6 +1689,8 @@ class ApplicationSession(BaseSession):
 
             request_id = self._request_id_gen.next()
             on_reply = txaio.create_future()
+            if check_types:
+                fn = self.type_check(fn)
             endpoint_obj = Endpoint(fn, obj, options.details_arg if options else None)
             if prefix is not None:
                 procedure = "{}{}".format(prefix, procedure)
@@ -1688,7 +1717,7 @@ class ApplicationSession(BaseSession):
         if callable(endpoint):
 
             # register a single callable
-            return _register(None, endpoint, procedure, options)
+            return _register(None, endpoint, procedure, options, check_types)
 
         else:
 
@@ -1701,7 +1730,7 @@ class ApplicationSession(BaseSession):
                         if pat.is_endpoint():
                             _uri = pat.uri()
                             regopts = pat.options or options
-                            on_replies.append(_register(endpoint, proc, _uri, regopts))
+                            on_replies.append(_register(endpoint, proc, _uri, regopts, pat._check_types))
 
             # XXX needs coverage
             return txaio.gather(on_replies, consume_exceptions=True)
